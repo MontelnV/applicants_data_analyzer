@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Competition Groups</title>
+</head>
+<body>
+    <h1>Upload a File</h1>
+    <form action="/uploadfile/" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <input type="file" name="file" id="file">
+        <button type="submit">Upload</button>
+    </form>
+    <p id="error-message" style="color:red;"></p>
+    <p id="status-message" style="color:green;"></p>
+
+    <h2>Competition Groups</h2>
+    <table border="1">
+        <tr>
+            <th>UUID</th>
+            <th>Seats</th>
+            <th>Actions</th>
+        </tr>
+        {% for group in groups %}
+        <tr>
+            <form action="/update_seats/{{ group.contest_uuid }}" method="post">
+                <td>{{ group.contest_uuid }}</td>
+                <td><input type="number" name="places" value="{{ group.places or 0 }}" disabled></td>
+                <td>
+                    <button type="button" onclick="enableEdit(this)">Редактировать</button>
+                    <button type="submit" style="display: none;">Обновить</button>
+                </td>
+            </form>
+            <td>
+                <form action="/delete_group/{{ group.contest_uuid }}" method="post" onsubmit="return confirm('Вы уверены, что хотите удалить эту группу?');">
+                    <button type="submit">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <script>
+        function validateForm() {
+            var fileInput = document.getElementById('file');
+            var filePath = fileInput.value;
+            var allowedExtensions = /(.xlsx)$/i;
+            if (!allowedExtensions.exec(filePath)) {
+                document.getElementById('error-message').innerText = 'Неправильный формат файла. Допускаются только файлы .xlsx.';
+                return false;
+            }
+            document.getElementById('error-message').innerText = '';
+            return true;
+        }
+
+        function enableEdit(button) {
+            var form = button.closest('form');
+            var input = form.querySelector('input[name="places"]');
+            var updateButton = button.nextElementSibling;
+
+            input.disabled = false;
+            button.style.display = 'none';
+            updateButton.style.display = 'inline-block';
+
+            input.focus();
+        }
+
+        function setupWebSocket() {
+            var statusMessage = document.getElementById("status-message");
+            var socket = new WebSocket("ws://" + window.location.host + "/ws/status");
+
+            socket.onmessage = function(event) {
+                statusMessage.innerText = event.data;
+            };
+        }
+
+        window.onload = setupWebSocket;
+    </script>
+</body>
+</html>
